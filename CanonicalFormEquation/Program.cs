@@ -14,9 +14,9 @@ public class Equation
     private string strRightPart;
     private List<EquationSummand> expandedEquation;
     // Right part of equation
-    private EquationExpression leftPart = new EquationExpression();
+    private EquationExpression leftPart;
     // Left part of the equation
-    private EquationExpression rightPart = new EquationExpression();
+    private EquationExpression rightPart;
     private List<EquationSummand> canonicalEquation;
 
     // Gets list of tokens
@@ -42,6 +42,8 @@ public class Equation
         try
         {
             var equation = toParse.Split('=');
+            leftPart = new EquationExpression(); 
+            rightPart = new EquationExpression();
             strLeftPart = equation[0];
             strRightPart = equation[1];
             Parse(strLeftPart, leftPart);
@@ -78,7 +80,7 @@ public class Equation
             ret += ")";
         return ret;
     }
-    #endregion
+    
 
     /// <summary>
     /// Transforms an expanded equation to canonical form
@@ -91,6 +93,9 @@ public class Equation
             summand => new EquationSummand(summand.Sum(s=> s.Amount),summand.Key)
             
             ).Where(s=> s.Amount != 0).OrderBy(s => s.Type, new VariableTypeComparer()).ToList();
+
+        if (canonicalEquation.Count == 0)
+            return;
 
         var first = canonicalEquation.First();
         first.SetFirst(true);
@@ -112,10 +117,15 @@ public class Equation
     public string OutputCanonical()
     {
         var ret = new StringBuilder();
+
         foreach (var record in canonicalEquation)
         {
             ret.Append(string.Format("{0} ", record));
         }
+
+        if (canonicalEquation.Count == 0)
+            ret.Append("0 ");
+
         ret.Append("= 0");
         return ret.ToString();
     }
@@ -237,7 +247,6 @@ public class Equation
     {
         return chr >= '0' && chr <= '9';
     }
-
     private bool IsFloat(char chr)
     {
         return chr >= '0' && chr <= '9' || chr == '.' || chr == ',';
@@ -250,7 +259,6 @@ public class Equation
     {
         return chr == '^';
     }
-
     private bool IsSign(char chr)
     {
         return chr == '-' || chr == '+';
@@ -275,6 +283,7 @@ public class Equation
         shift = i + 1;
         return int.Parse(power);
     }
+    #endregion
 
 }
 
@@ -426,7 +435,7 @@ public class EquationSummand : EquationPart
     {
         string output = string.Empty;
         if (amount != 0)
-            output += sign == 1 ? (!isFirst) ? "+" : "" : "-";
+            output += sign == 1 ? (!isFirst) ? "+ " : "" : "- ";
         output += amount == 1 ? "" : amount.ToString();
         foreach (var variable in Type.Variables)
         {
@@ -678,7 +687,7 @@ public class VariableTypeComparer : IComparer<SummandType>
 public class Program
 {
     private const string InputString = "Please select input method: from (F)ile or (I)nteractive?";
-    private const string InputFilename = "Please input filename";
+    private const string InputFilename = "Please input filename:";
     private const string InvalidInput = "Invalid input";
     private const string InputEquation = "Please input your equation";
     private const string Example = "Example: \"x^2 + y^2 + 2xy = 0\"";
@@ -727,6 +736,7 @@ public class Program
                     }
                 }
             }
+            Console.WriteLine("Saved to output.out");
         }
         else
             Console.WriteLine(FileNotExist);
