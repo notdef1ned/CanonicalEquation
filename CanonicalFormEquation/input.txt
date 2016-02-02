@@ -1,0 +1,1 @@
+abc + bac + cab + bca + acb + cba = 0

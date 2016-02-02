@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CanonicalFormEquation", "CanonicalFormEquation\CanonicalFormEquation.csproj", "{0456B53F-086F-49FB-BE9D-BF1DBB4F323E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{4D1A376A-73D0-4D1B-A53C-05934E1F9F46}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0456B53F-086F-49FB-BE9D-BF1DBB4F323E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0456B53F-086F-49FB-BE9D-BF1DBB4F323E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0456B53F-086F-49FB-BE9D-BF1DBB4F323E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0456B53F-086F-49FB-BE9D-BF1DBB4F323E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D1A376A-73D0-4D1B-A53C-05934E1F9F46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D1A376A-73D0-4D1B-A53C-05934E1F9F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D1A376A-73D0-4D1B-A53C-05934E1F9F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D1A376A-73D0-4D1B-A53C-05934E1F9F46}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
