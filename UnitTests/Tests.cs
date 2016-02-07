@@ -1,4 +1,4 @@
-﻿using System;
+﻿using CanonicalFormEquation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace UnitTests
