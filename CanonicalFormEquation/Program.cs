@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,16 +29,13 @@ public class Equation
     /// <summary>
     /// Count of elements in canonical equation
     /// </summary>
-    public int CanonicalCount
-    {
-        get { return canonicalEquation.Count; }
-    }
+    public int CanonicalCount => canonicalEquation.Count;
 
     #endregion
 
     #region Methods
 
-    public void Parse(string toParse)
+    public bool Parse(string toParse)
     {
         try
         {
@@ -49,23 +47,25 @@ public class Equation
             Parse(strLeftPart, leftPart);
             Parse(strRightPart, rightPart);
             ToCanonical();
+            return true;
         }
         catch
         {
             Console.WriteLine("Invalid input format");
+            return false;
         }
     }
 
     public override string ToString()
     {
-        return leftPart.ToString() + '=' + rightPart.ToString();
+        return leftPart.ToString() + '=' + rightPart;
     }
     
 
 
     public string Output(EquationExpression exp, bool isRoot = false)
     {
-        string ret = isRoot ? "(" : string.Empty;
+        var ret = isRoot ? "(" : string.Empty;
         foreach (var part in exp.EquationParts)
         {
             var expression = part as EquationExpression;
@@ -74,7 +74,7 @@ public class Equation
             if (expression != null)
                 ret += Output(expression);
             else
-                ret += summand.ToString();
+                ret += summand?.ToString();
         }
         if (isRoot)
             ret += ")";
@@ -100,13 +100,13 @@ public class Equation
         var first = canonicalEquation.First();
         first.SetFirst(true);
 
-        if (first.Amount != 1)
+        if (first.Amount == 1)
+            return;
+
+        var amount = first.Amount;
+        foreach (var record in canonicalEquation)
         {
-            var amount = first.Amount;
-            foreach (var record in canonicalEquation)
-            {
-                record.SetAmount(record.Amount / amount);
-            }
+            record.SetAmount(record.Amount / amount);
         }
     }
 
@@ -120,7 +120,7 @@ public class Equation
 
         foreach (var record in canonicalEquation)
         {
-            ret.Append(string.Format("{0} ", record));
+            ret.Append($"{record} ");
         }
 
         if (canonicalEquation.Count == 0)
@@ -154,10 +154,10 @@ public class Equation
     {
         // Remove all whitespaces from equation string
         var copy = toParse.Replace(" ", string.Empty).Trim();
-        int i = 0;
-        int currentSign = 1;
+        var i = 0;
+        var currentSign = 1;
         // Next Expression or summand will be first in sequence
-        bool first = true;
+        var first = true;
 
         while (i < copy.Length)
         {
@@ -167,8 +167,8 @@ public class Equation
                 var newExpression = new EquationExpression(currentSign,first);
                 first = false;
                 exp.AddEquationPart(newExpression);
-                int begin = i + 1;
-                int bracketsCounter = 1;
+                var begin = i + 1;
+                var bracketsCounter = 1;
                 while (bracketsCounter != 0 && i < copy.Length)
                 {
                     i++;
@@ -231,7 +231,7 @@ public class Equation
             }
             else if (IsPower(toParse[i]))
             {
-                currentVariable.SetPower(ParsePower(toParse.Substring(i + 1), out shift));
+                currentVariable?.SetPower(ParsePower(toParse.Substring(i + 1), out shift));
             }
             i += shift;
         }
@@ -267,7 +267,7 @@ public class Equation
     private int ParsePower(string toParse, out int shift)
     {
         var power = string.Empty;
-        int i = 0;
+        var i = 0;
         var item = toParse;
         // if power is negative
         if (IsSign(item[i]))
@@ -296,25 +296,18 @@ public class EquationExpression : EquationPart
     #region Constructor
     public EquationExpression(int sign = 1, bool isFirst = false) :base(sign, isFirst)
     {
-        equationParts = new List<EquationPart>();
+        EquationParts = new List<EquationPart>();
     }
     #endregion
     
-    #region Fields
-    private List<EquationPart> equationParts;
-    #endregion
-
     #region Properties
-    public List<EquationPart> EquationParts
-    {
-        get { return equationParts; }
-    }
+    public List<EquationPart> EquationParts { get; }
     #endregion
 
     #region Methods
     public void AddEquationPart(EquationPart part)
     {
-        equationParts.Add(part);
+        EquationParts.Add(part);
     }
 
     public override string ToString()
@@ -334,7 +327,7 @@ public class EquationExpression : EquationPart
         if (exp == null)
             exp = this;
         var ret = new List<EquationSummand>();
-        foreach (var part in exp.equationParts)
+        foreach (var part in exp.EquationParts)
         {
             var expression = part as EquationExpression;
             var summand = part as EquationSummand;
@@ -343,8 +336,8 @@ public class EquationExpression : EquationPart
             else
             {
                 if (exp.Sign < 0)
-                   summand.Sign = -summand.Sign;
-               ret.Add(summand);
+                    if (summand != null) summand.Sign = -summand.Sign;
+                ret.Add(summand);
             }
         }
         return ret;
@@ -362,7 +355,7 @@ public class EquationExpression : EquationPart
         var outputStr = string.Empty;
         if (needBrackets)
             outputStr += "(";
-        foreach (var equationPart in exp.equationParts)
+        foreach (var equationPart in exp.EquationParts)
         {
             var expression = equationPart as EquationExpression;
             if (expression != null)
@@ -374,7 +367,7 @@ public class EquationExpression : EquationPart
             else
             {
                 var summand = equationPart as EquationSummand;
-                outputStr += summand.ToString();
+                outputStr += summand?.ToString();
             }
         }
         if (needBrackets)
@@ -392,70 +385,62 @@ public class EquationExpression : EquationPart
 public class EquationSummand : EquationPart
 {
     #region Constructors
-    public EquationSummand(float amount, int sign = 1, bool isFirst = false,SummandType type = null) : base(sign,isFirst)
+    public EquationSummand(float amount, int sign = 1, bool isFirst = false, SummandType type = null) : base(sign,isFirst)
     {
         this.amount = amount;
+        Type = type;
     }
 
     public EquationSummand(float amount, SummandType type)
     {
         sign = Math.Sign(amount);
         this.amount = Math.Abs(amount);
-        this.type = type;
+        Type = type;
     }
 
     public EquationSummand(int sign = 1, bool isFirst = false) : base(sign,isFirst)
     {
-        this.amount = 1.0f;
+        amount = 1.0f;
     }
     #endregion
 
     #region Fields
     // The amount
-    private float amount = 1.0f;
+    private float amount;
     // Variables present in the summand
-    private SummandType type = new SummandType();
+
     #endregion
 
     #region Properties
-    public float Amount
-    {
-        get { return amount * sign; }
-    }
+    public float Amount => amount * sign;
 
-    public SummandType Type
-    {
-        get { return type; }
-    }
+    public SummandType Type { get; } = new SummandType();
+
     #endregion
 
     #region Methods
 
     public override string ToString()
     {
-        string output = string.Empty;
+        var output = string.Empty;
         if (amount != 0)
             output += sign == 1 ? (!isFirst) ? "+ " : "" : "- ";
-        output += amount == 1 ? "" : amount.ToString();
-        foreach (var variable in Type.Variables)
-        {
-            output += variable.ToString();
-        }
-        return output;
+        output += amount == 1 ? "" : amount.ToString(CultureInfo.InvariantCulture);
+        return Type.Variables.Aggregate(output, (current, variable) => current + variable.ToString());
     }
 
-    public void SetAmount(string amount)
+    public void SetAmount(string amountStr)
     {
         float result;
         // if amount string contains dot  
-        amount = amount.Replace('.', ',');
-        this.amount = (amount == "") ? 1 : float.TryParse(amount,out result) ? result: float.NaN;
+        amountStr = amountStr.Replace('.', ',');
+        amount = amountStr == string.Empty ? 1 : float.TryParse(amountStr,out result) ? result: float.NaN;
     }
 
     public void SetAmount(float amount)
     {
         this.amount = Math.Abs(amount);
-        this.sign = Math.Sign(amount);
+        sign = Math.Sign(amount);
     }
     #endregion
 
@@ -530,7 +515,7 @@ public class SummandType : IComparable
     #endregion
 
     #region Fields
-    private List<Variable> variables;
+    private readonly List<Variable> variables;
     #endregion
 
     #region Properties
@@ -544,23 +529,12 @@ public class SummandType : IComparable
 
     public string GetVariableNames()
     {
-        var allNames = string.Empty;
-        foreach (var variable in Variables)
-        {
-            allNames += variable.Name;
-        }
-        return allNames;
+        return Variables.Aggregate(string.Empty, (current, variable) => current + variable.Name);
     }
 
     public int GetMaxDegree()
     {
-        var degree = 1;
-        foreach (var variable in Variables)
-        {
-            if (variable.Power > degree)
-                degree = variable.Power;
-        }
-        return degree;
+        return Variables.Select(variable => variable.Power).Concat(new[] {1}).Max();
     }
 
     public override bool Equals(object obj)
@@ -575,22 +549,12 @@ public class SummandType : IComparable
 
     public override int GetHashCode()
     {
-        int hash = 0;
-        foreach (var variable in Variables)
-        {
-            hash += variable.Name;
-        }
-        return hash;
+        return Variables.Aggregate(0, (current, variable) => current + variable.Name);
     }
 
     public override string ToString()
     {
-        var ret = string.Empty;
-        foreach (var variable in Variables)
-        {
-            ret += variable.ToString();
-        }
-        return ret;
+        return Variables.Aggregate(string.Empty, (current, variable) => current + variable.ToString());
     }
 
     public Variable AddVariable(Variable var)
@@ -602,15 +566,11 @@ public class SummandType : IComparable
     public int CompareTo(object obj)
     {
         var type = obj as SummandType;
-        if (GetMaxDegree() < type.GetMaxDegree())
+        if (type != null && GetMaxDegree() < type.GetMaxDegree())
             return 1;
-        else if (GetMaxDegree() > type.GetMaxDegree())
+        if (type != null && GetMaxDegree() > type.GetMaxDegree())
             return -1;
-        else
-        {
-            return GetVariableNames().CompareTo(type.GetVariableNames());
-        }
-            
+        return string.Compare(GetVariableNames(), type?.GetVariableNames(), StringComparison.Ordinal);
     }
     #endregion
 
@@ -624,49 +584,39 @@ public class Variable
     #region Constructor
     public Variable(char type, int power)
     {
-        this.name = type;
-        this.power = power;
+        Name = type;
+        Power = power;
     }
-    #endregion
-
-    #region Fields
-    private char name;
-    private int power;
     #endregion
     
     #region Properties
-    public int Power
-    {
-        get { return power; }
-    }
+    public int Power { get; private set; }
 
-    public char Name
-    {
-        get { return name; }
-    }
+    public char Name { get; }
+
     #endregion
 
     #region Methods
     public override string ToString()
     {
-        return name + ((power != 1) ? "^" + power.ToString() : "");
+        return Name + ((Power != 1) ? "^" + Power.ToString() : "");
     }
 
     public override bool Equals(object obj)
     {
         var variable = obj as Variable;
-        return name == variable.name && power == variable.power;
+        return variable != null && Name == variable.Name && Power == variable.Power;
     }
 
     public override int GetHashCode()
     {
-        var hash = name.GetHashCode();
+        var hash = Name.GetHashCode();
         return hash;
     }
 
     public void SetPower(int power)
     {
-        this.power = power;
+        Power = power;
     }
     #endregion
 
@@ -689,52 +639,72 @@ public class Program
     private const string InputString = "Please select input method: from (F)ile or (I)nteractive?";
     private const string InputFilename = "Please input filename:";
     private const string InvalidInput = "Invalid input";
+    private const string InvalidInputFormat = "Invalid input format";
     private const string InputEquation = "Please input your equation";
     private const string Example = "Example: \"x^2 + y^2 + 2xy = 0\"";
     private const string FileNotExist = "Specified file does not exist";
     private const string Result = "Result";
-    static void Main()
+    private const string Usage = "Usage: {0} input_file";
+
+    private static void Main(string[] args)
     {
-        while(true)
+        switch (args.Length)
         {
-            Console.WriteLine(InputString);
-            var key = Console.ReadLine();
-            switch (key.ToString())
-            {
-                case "F":
-                case "f":
-                    FromFile();
-                    break;
-                case "I":
-                case "i":
-                    FromConsole();
-                    break;
-                default:
-                    Console.WriteLine(InvalidInput);
-                    break;
-            }
+            case 0:
+                while (true)
+                {
+                    Console.WriteLine(InputString);
+                    var line = Console.ReadLine();
+                    switch (line)
+                    {
+                        case "F":
+                        case "f":
+                            FromFile();
+                            break;
+                        case "I":
+                        case "i":
+                            FromConsole();
+                            break;
+                        default:
+                            Console.WriteLine(InvalidInput);
+                            break;
+                    }
+                }
+            case 1:
+                FromFile(args[0]);
+                break;
+            default:
+                WriteUsage();
+                break;
         }
     }
 
-    
 
-    private static void FromFile()
+    private static void FromFile(string inputFile = null)
     {
-        Console.WriteLine(InputFilename);
-        var input = Console.ReadLine();
+        string input;
+        if (inputFile != null)
+            input = inputFile;
+        else
+        {
+            Console.WriteLine(InputFilename);
+            input = Console.ReadLine();
+        }
         var equation = new Equation();
         if (File.Exists(input))
         {
             using (var streamWriter = new StreamWriter("output.out"))
             {
-                using (var reader = new StreamReader(input))
-                {
-                    while (reader.Peek() > 0)
+                if (input != null)
+                    using (var reader = new StreamReader(input))
                     {
-                        equation.Parse(reader.ReadLine());
-                        streamWriter.WriteLine(equation.OutputCanonical());
+                        while (reader.Peek() > 0)
+                        {
+                            streamWriter.WriteLine(equation.Parse(reader.ReadLine())
+                                ? equation.OutputCanonical()
+                                : InvalidInputFormat);
+                        }
                     }
-                }
             }
             Console.WriteLine("Saved to output.out");
         }
@@ -742,13 +712,18 @@ public class Program
             Console.WriteLine(FileNotExist);
     }
 
+    private static void WriteUsage()
+    {
+        Console.WriteLine(Usage,AppDomain.CurrentDomain.FriendlyName);
+    }
+
     private static void FromConsole()
     {
         Console.WriteLine("{0}\n{1}",InputEquation,Example);
         string str = Console.ReadLine();
         var equation = new Equation();
-        equation.Parse(str);
-        Console.WriteLine("{0}:\n{1}",Result, equation.OutputCanonical());
+        if (equation.Parse(str))
+            Console.WriteLine("{0}:\n{1}",Result, equation.OutputCanonical());
     }
 }
 
